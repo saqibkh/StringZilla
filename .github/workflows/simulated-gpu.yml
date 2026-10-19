@@ -42,7 +42,7 @@ jobs:
         uses: pantheongpu/pantheonsim@89d6bcd586960c59ade092e60ad47c7b0eea4a30 # main, 2026-10-19
         with:
           gpu: nvidia/h100
-          cuda-toolkit: "12.9"
+          cuda-toolkit: "12.8"
 
       - name: Install dependencies
         run: |
@@ -79,7 +79,7 @@ jobs:
         uses: pantheongpu/pantheonsim@89d6bcd586960c59ade092e60ad47c7b0eea4a30 # main, 2026-10-19
         with:
           gpu: nvidia/h100
-          cuda-toolkit: "12.9"
+          cuda-toolkit: "12.8"
 
       - name: Install dependencies
         run: |
