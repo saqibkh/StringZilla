@@ -60,7 +60,9 @@ jobs:
           cmake --build build_artifacts --target stringzillas_test_cu20 --config Release
 
       - name: Test C++ StringZillas-CUDA
-        run: vgpu run build_artifacts/stringzillas_test_cu20
+        run: |
+          VGPU_TRACE=1 vgpu run build_artifacts/stringzillas_test_cu20 > trace.log 2>&1 || { tail -150 trace.log | cut -c1-400; exit 1; }
+          tail -20 trace.log
 
   test_python_cuda:
     name: Python StringZillas-CUDA on a simulated GPU
@@ -100,4 +102,4 @@ jobs:
           SZ_TARGET=stringzillas-cuda pip install -e . --force-reinstall --no-build-isolation --no-deps
 
       - name: Test Python StringZillas-CUDA
-        run: vgpu run python -X faulthandler -m pytest test/stringzillas.py test/similarities.py test/fingerprints.py test/doctests.py -s -vv --maxfail=1 --full-trace
+        run: vgpu run python -X faulthandler -m pytest test/stringzillas.py test/similarities.py test/fingerprints.py test/doctests.py -vv --tb=short -p no:cacheprovider
