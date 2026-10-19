@@ -1,0 +1,58 @@
+name: "Simulated GPU"
+
+# GitHub's runners have no GPU, so `test_ubuntu_cuda` in prerelease.yml builds the CUDA kernels but never
+# launches one. PantheonSim simulates an NVIDIA A100 on the runner's CPU, so the StringZillas-CUDA tests
+# execute here. It checks results, not speed; a real GPU is still the final word.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The jobs read the repository and nothing else. The simulator's action uses no token or secrets,
+# and installs packages only from Ubuntu and NVIDIA.
+permissions:
+  contents: read
+
+jobs:
+  test_cpp_cuda:
+    name: C++ StringZillas-CUDA on a simulated GPU
+    runs-on: ubuntu-22.04
+    env:
+      CC: gcc-12
+      CXX: g++-12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Simulated GPU (NVIDIA A100) and CUDA toolkit
+        uses: pantheongpu/pantheonsim@89d6bcd586960c59ade092e60ad47c7b0eea4a30 # main, 2026-10-19
+        with:
+          gpu: nvidia/a100
+          cuda-toolkit: "12.8"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake build-essential gcc-12 g++-12
+
+      # The simulator stands in for the CUDA runtime at run time, so the shared one is linked.
+      # The default architectures, `80-real;90-real`, carry the sm_80 SASS the simulated A100 executes.
+      - name: Build
+        run: |
+          cmake -B build_artifacts \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -DSTRINGZILLA_BUILD_TEST=1
+          cmake --build build_artifacts --target stringzillas_test_cu20 --config Release
+
+      - name: Test C++ StringZillas-CUDA
+        run: vgpu run build_artifacts/stringzillas_test_cu20
