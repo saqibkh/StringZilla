@@ -56,13 +56,14 @@ jobs:
           cmake -B build_artifacts \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -DCMAKE_CUDA_FLAGS='-gencode=arch=compute_90,code=compute_90' \
             -DSTRINGZILLA_BUILD_TEST=1
           cmake --build build_artifacts --target stringzillas_test_cu20 --config Release
 
       - name: Test C++ StringZillas-CUDA
         run: |
-          VGPU_TRACE=1 vgpu run build_artifacts/stringzillas_test_cu20 > trace.log 2>&1 || { tail -150 trace.log | cut -c1-400; exit 1; }
-          tail -20 trace.log
+          VGPU_SASS=0 vgpu run build_artifacts/stringzillas_test_cu20 > ptx.log 2>&1 && echo PTX-PASS || { echo PTX-FAIL; tail -30 ptx.log | cut -c1-300; }
+          VGPU_SASS_LOG=1 vgpu run build_artifacts/stringzillas_test_cu20 > sass.log 2>&1 && echo SASS-PASS || { echo SASS-FAIL; tail -40 sass.log | cut -c1-300; exit 1; }
 
   test_python_cuda:
     name: Python StringZillas-CUDA on a simulated GPU
