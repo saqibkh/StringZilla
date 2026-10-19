@@ -93,6 +93,8 @@ jobs:
 
       - name: Build Python StringZillas-CUDA
         run: |
+          sed -i 's/"80-real", "90-real", "90-virtual"/"80-real", "90-real"/' setup.py
+          git diff --stat
           python -m pip install --upgrade pip
           pip install "setuptools>=64" wheel
           pip install pytest pytest-repeat numpy pyarrow wheel affine-gaps
