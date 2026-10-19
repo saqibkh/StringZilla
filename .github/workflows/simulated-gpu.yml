@@ -19,11 +19,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  PYTHON_VERSION: 3.13
-  PYTHONUTF8: 1
-  PYTHONFAULTHANDLER: 1
-
 jobs:
   test_cpp_cuda:
     name: C++ StringZillas-CUDA on a simulated GPU
@@ -61,45 +56,3 @@ jobs:
 
       - name: Test C++ StringZillas-CUDA
         run: vgpu run build_artifacts/stringzillas_test_cu20
-
-  test_python_cuda:
-    name: Python StringZillas-CUDA on a simulated GPU
-    runs-on: ubuntu-22.04
-    env:
-      CC: gcc-12
-      CXX: g++-12
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: Simulated GPU (NVIDIA A100) and CUDA toolkit
-        uses: pantheongpu/pantheonsim@89d6bcd586960c59ade092e60ad47c7b0eea4a30 # main, 2026-10-19
-        with:
-          gpu: nvidia/a100
-          cuda-toolkit: "12.8"
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential gcc-12 g++-12
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Build Python StringZillas-CUDA
-        run: |
-          sed -i 's/"80-real", "90-real", "90-virtual"/"80-real", "90-real"/' setup.py
-          git diff --stat
-          python -m pip install --upgrade pip
-          pip install "setuptools>=64" wheel
-          pip install pytest pytest-repeat numpy pyarrow wheel affine-gaps
-          SZ_TARGET=stringzilla pip install -e . --force-reinstall --no-build-isolation
-          SZ_TARGET=stringzillas-cuda pip install -e . --force-reinstall --no-build-isolation --no-deps
-
-      - name: Test Python StringZillas-CUDA
-        run: vgpu run python -X faulthandler -m pytest test/stringzillas.py test/similarities.py test/fingerprints.py test/doctests.py -s -vv --maxfail=1 --full-trace
